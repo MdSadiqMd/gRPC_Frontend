@@ -1,5 +1,10 @@
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
+import express, { Request, Response } from 'express';
+import bodyParser from 'body-parser';
+
+import { serverConfig, logger } from './config';
+import { Todo, TodoList } from './types/todo.types';
 
 const packageDefinition = protoLoader.loadSync('./todo.proto', {
     keepCase: true,
@@ -9,28 +14,36 @@ const packageDefinition = protoLoader.loadSync('./todo.proto', {
     oneofs: true,
 });
 
-const todoProto = grpc.loadPackageDefinition(packageDefinition) as unknown as {
-    todoPackage: {
-        TodoService: grpc.ServiceClientConstructor;
-    };
+const todoProto = grpc.loadPackageDefinition(packageDefinition).todoPackage as {
+    TodoService: grpc.ServiceClientConstructor;
 };
 
-const client = new todoProto.todoPackage.TodoService('127.0.0.1:50051', grpc.credentials.createInsecure());
+const client = new todoProto.TodoService(`127.0.0.1:${serverConfig.SERVER_PORT}`, grpc.credentials.createInsecure());
 
-client.listTodos({}, (error: any, response: any) => {
-    if (error) {
-        console.error('Error:', error);
-    } else {
-        console.log('Todos:', response);
-        client.createTodo({ id: '4', title: 'new todo', content: '' }, (error: any, todo: any) => {
-            if (error) {
-                console.log('error', error);
-                client.listTodos({}, (error: any, todos: any) => {
-                    console.log('after insertion', todos);
-                });
-            } else {
-                console.log('created new todo');
-            }
-        });
-    }
+const app = express();
+app.use(bodyParser.json());
+
+app.get('/todos', (req: Request, res: Response) => {
+    client.ListTodos({}, (error: grpc.ServiceError | null, response: TodoList) => {
+        if (error) {
+            logger.error(`Error fetching Todos: ${error.message}`);
+            return res.status(500).send(error);
+        }
+        res.send(response.todos);
+    });
+});
+
+app.post('/todos', (req: Request, res: Response) => {
+    const newTodo: Todo = req.body;
+    client.createTodo(newTodo, (error: grpc.ServiceError | null, response: Todo) => {
+        if (error) {
+            logger.error(`Error creating Todo: ${error.message}`);
+            return res.status(500).send(error);
+        }
+        res.status(201).send(response);
+    });
+});
+
+app.listen(serverConfig.PORT, () => {
+    logger.info(`Client Server Started`);
 });
