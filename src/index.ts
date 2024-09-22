@@ -2,6 +2,7 @@ import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import express, { Request, Response } from 'express';
 import bodyParser from 'body-parser';
+import cors from 'cors';
 
 import { serverConfig, logger } from './config';
 import { Todo, TodoList } from './types/todo.types';
@@ -22,6 +23,7 @@ const client = new todoProto.TodoService(`127.0.0.1:${serverConfig.SERVER_PORT}`
 
 const app = express();
 app.use(bodyParser.json());
+app.use(cors());
 
 app.get('/todos', (req: Request, res: Response) => {
     client.ListTodos({}, (error: grpc.ServiceError | null, response: TodoList) => {

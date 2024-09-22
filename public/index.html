@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo Application</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        input,
+        textarea,
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        ul li {
+            background-color: #ecf0f1;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+
+        ul li:nth-child(even) {
+            background-color: #bdc3c7;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .container {
+                padding: 15px;
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Todo Application</h1>
+
+        <div>
+            <h2>Create Todo</h2>
+            <input type="text" id="todoTitle" placeholder="Todo Title" required>
+            <textarea id="todoContent" placeholder="Todo Content"></textarea>
+            <button id="createTodoButton">Create Todo</button>
+        </div>
+
+        <div>
+            <h2>List Todos</h2>
+            <button id="listTodosButton">List Todos</button>
+            <ul id="todoList"></ul>
+        </div>
+    </div>
+
+    <script>
+        $('#createTodoButton').click(() => {
+            const title = $('#todoTitle').val();
+            const content = $('#todoContent').val();
+
+            if (!title || !content) {
+                alert('Please fill out both the title and content.');
+                return;
+            }
+
+            const newTodo = {
+                id: Date.now().toString(),
+                title,
+                content,
+            };
+
+            console.log('Creating todo:', newTodo);
+
+            $.post('http://localhost:3000/todos', newTodo)
+                .done((response) => {
+                    console.log('Created new todo:', response);
+                    listTodos();
+                })
+                .fail((error) => {
+                    console.error('Error creating todo:', error);
+                });
+        });
+
+        $('#listTodosButton').click(() => {
+            listTodos();
+        });
+
+        function listTodos() {
+            $.get('http://localhost:3000/todos', (todos) => {
+                $('#todoList').empty();
+                todos.forEach(todo => {
+                    $('#todoList').append(`<li>${todo.title}: ${todo.content}</li>`);
+                });
+            }).fail((error) => {
+                console.error('Error fetching todos:', error);
+            });
+        }
+    </script>
+</body>
+
+</html>
